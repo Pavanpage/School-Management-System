@@ -1,12 +1,21 @@
-<meta charset="UTF-8">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student House Management System</title>
   
+  <!-- External Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
+  
+  <!-- Firebase SDK (using the compat libraries for easier migration) -->
+  <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
+  
+  <!-- CSS Styles (same as your original code) -->
   <style>
-    /* ===== Reset & Global Styles ===== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Arial, sans-serif;
@@ -114,9 +123,8 @@
       text-align: center;
     }
     .house-table th { background: #eee; }
-    /* Wrap each house detail in a div for individual printing */
     .house-detail-wrapper { margin-bottom: 15px; }
-    /* New Print All Houses Container */
+    /* ===== Print All Houses Container ===== */
     #printAllContainer { text-align: center; margin: 20px auto; }
     #printAllContainer button {
       padding: 0.6em 1em; font-size: 1rem;
@@ -160,8 +168,8 @@
       font-size: 1rem;
     }
   </style>
-
-
+</head>
+<body>
   <div id="loginContainer">
     <h2>SCHOOL HOUSES MANAGEMENT SYSTEM</h2>
     <form id="loginForm">
@@ -176,7 +184,8 @@
     <h1>Student House Management System</h1>
     
     <div id="saveDataContainer">
-      <button id="saveDataButton">Save Data</button>
+      <!-- The Save Data button is not needed since data is now cloud‑based. -->
+      <!-- <button id="saveDataButton">Save Data</button> -->
       <button id="downloadPDFButton">Download PDF</button>
     </div>
     
@@ -271,38 +280,56 @@
     </div>
   </div>
   
+  <!-- JavaScript -->
   <script>
+    /**********************
+     * Firebase Configuration and Initialization
+     **********************/
+    // Replace the placeholder values below with your Firebase project's configuration.
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     /**********************
      * Global Data Structures
      **********************/
-    let students = []; // Global student records
+    let students = []; // Records from Firestore
     const numberOfHouses = 4;
     let houses = Array.from({ length: numberOfHouses }, () => []);
-    
-    /**********************
-     * Save & Load Data Functions
-     **********************/
-    document.getElementById("saveDataButton").addEventListener("click", function() {
-      localStorage.setItem("students", JSON.stringify(students));
-      localStorage.setItem("houses", JSON.stringify(houses));
-      alert("Data saved successfully!");
-    });
-    
-    function loadSavedData() {
-      const savedStudents = localStorage.getItem("students");
-      const savedHouses = localStorage.getItem("houses");
-      if (savedStudents) { students = JSON.parse(savedStudents); }
-      if (savedHouses) { houses = JSON.parse(savedHouses); }
+
+    /****************************
+     * Realtime Listener for Firestore Data
+     ****************************/
+    db.collection("students").orderBy("timestamp", "asc").onSnapshot(snapshot => {
+      students = [];
+      houses = Array.from({ length: numberOfHouses }, () => []);
+      snapshot.forEach(doc => {
+        let student = doc.data();
+        student.id = doc.id;
+        students.push(student);
+        if (student.house !== null && student.house < numberOfHouses) {
+          houses[student.house].push(student);
+        }
+      });
       updateHouseDetails();
       updateHouseChart();
       updateClassGenderChart();
-    }
-    
-    /**********************
+    });
+
+    /****************************
      * Simple Login Functionality
-     **********************/
-    const validUsername = "pavanpages";
-    const validPassword = "#Namasvi03";
+     ****************************/
+    const validUsername = "Pavaora1";
+    const validPassword = "Pavora@2026";
     
     document.getElementById("loginForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -311,14 +338,13 @@
       if (usernameVal === validUsername && passwordVal === validPassword) {
         document.getElementById("loginContainer").style.display = "none";
         document.getElementById("systemContainer").style.display = "block";
-        loadSavedData();
       } else {
         document.getElementById("loginError").textContent = "Invalid username or password.";
       }
     });
     
     /****************************
-     * Student Entry & Assignment
+     * Student Entry & Assignment (Firebase Integrated)
      ****************************/
     document.getElementById("studentForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -332,28 +358,38 @@
         return;
       }
       
-      const studentId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-      let student = { id: studentId, name, gender, classLevel: studentClass, house: null };
+      let student = {
+        name,
+        gender,
+        classLevel: studentClass,
+        house: null,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
       
       if (manualHouseSelection === "auto") {
+        // Use current house totals to determine the best house
         let bestHouse = 0;
         let minCount = Infinity;
-        houses.forEach((house, index) => {
-          if (house.length < minCount) { minCount = house.length; bestHouse = index; }
-        });
+        for (let i = 0; i < numberOfHouses; i++) {
+          let count = houses[i] ? houses[i].length : 0;
+          if (count < minCount) {
+            minCount = count;
+            bestHouse = i;
+          }
+        }
         student.house = bestHouse;
-        houses[bestHouse].push(student);
       } else {
-        let houseIndex = parseInt(manualHouseSelection, 10) - 1;
-        student.house = houseIndex;
-        houses[houseIndex].push(student);
+        student.house = parseInt(manualHouseSelection, 10) - 1;
       }
       
-      students.push(student);
-      document.getElementById("studentForm").reset();
-      updateHouseDetails();
-      updateHouseChart();
-      updateClassGenderChart();
+      // Save student record to Firestore
+      db.collection("students").add(student)
+        .then(() => {
+          document.getElementById("studentForm").reset();
+        })
+        .catch(error => {
+          console.error("Error adding student:", error);
+        });
     });
     
     /******************************
@@ -364,7 +400,7 @@
       container.innerHTML = "<h2>House Details</h2>";
       for (let i = 0; i < numberOfHouses; i++) {
         let html = `<div class="house-detail-wrapper" id="houseDetail_${i}"><h3>House ${i+1}</h3>`;
-        if (houses[i].length === 0) {
+        if (!houses[i] || houses[i].length === 0) {
           html += `<p>No students assigned.</p>`;
         } else {
           html += `<table class="house-table">
@@ -383,7 +419,7 @@
                        <td>${student.gender}</td>
                        <td>${student.classLevel}</td>
                        <td>
-                         <button onclick="removeStudent('${student.id}', ${i})">Remove</button>
+                         <button onclick="removeStudent('${student.id}')">Remove</button>
                          <button onclick="printHouse(${i})">Print</button>
                          <button onclick="downloadHouse(${i})">Download CSV</button>
                        </td>
@@ -397,14 +433,16 @@
     }
     
     /******************************
-     * Remove Student Functionality
+     * Remove Student Functionality (Firebase Delete)
      ******************************/
-    function removeStudent(studentId, houseIndex) {
-      houses[houseIndex] = houses[houseIndex].filter(s => s.id !== studentId);
-      students = students.filter(s => s.id !== studentId);
-      updateHouseDetails();
-      updateHouseChart();
-      updateClassGenderChart();
+    function removeStudent(studentId) {
+      db.collection("students").doc(studentId).delete()
+        .then(() => {
+          console.log("Student removed successfully.");
+        })
+        .catch(error => {
+          console.error("Error removing student:", error);
+        });
     }
     
     /******************************
@@ -420,7 +458,7 @@
       const groupWidth = availableWidth / numberOfHouses;
       const graphHeight = canvas.height - padding * 2;
       const houseColors = ["#2196F3", "#4CAF50", "#F44336", "#FFEB3B"];
-      let maxCount = Math.max(...houses.map(h => h.length), 1);
+      let maxCount = Math.max(...houses.map(h => h ? h.length : 0), 1);
       
       ctx.beginPath();
       ctx.moveTo(padding, padding);
@@ -431,7 +469,7 @@
       ctx.stroke();
       
       houses.forEach((house, i) => {
-        const count = house.length;
+        const count = house ? house.length : 0;
         const barHeight = (count / maxCount) * graphHeight;
         const x = padding + i * groupWidth + groupWidth * 0.2;
         const barWidth = groupWidth * 0.6;
@@ -445,10 +483,9 @@
       });
     }
     
-    /****************************************************
+    /******************************
      * Update Class Wise Gender Distribution Chart
-     * (With dropdown filter by House)
-     ****************************************************/
+     ******************************/
     function updateClassGenderChart() {
       const houseFilterVal = document.getElementById("houseFilter").value;
       let displayStudents = (houseFilterVal === "all")
@@ -526,7 +563,7 @@
       });
     }
     
-    // Listen for changes in the house filter dropdown.
+    // Update chart when the house filter changes
     document.getElementById("houseFilter").addEventListener("change", updateClassGenderChart);
     
     /**********************************
@@ -546,7 +583,7 @@
     
     function downloadHouse(houseIndex) {
       const house = houses[houseIndex];
-      if (house.length === 0) {
+      if (!house || house.length === 0) {
         alert("No student records for House " + (houseIndex+1));
         return;
       }
@@ -565,7 +602,7 @@
       document.body.removeChild(a);
     }
     
-    // A new function to print *all* house details.
+    // Print all house details
     function printAllHouseDetails() {
       const content = document.getElementById("houseDetails").innerHTML;
       const printWindow = window.open('', '', 'width=800,height=600');
@@ -580,7 +617,6 @@
       printWindow.close();
     }
     
-    // Listen for click on "Print All House Details" button.
     document.getElementById("printAllButton").addEventListener("click", printAllHouseDetails);
     
     /**********************************
@@ -600,7 +636,7 @@
     });
     
     /**********************************
-     * Excel Template Download & Upload
+     * Excel Template Download & Upload (Firebase Integrated)
      **********************************/
     function downloadExcelTemplate() {
       const ws_data = [
@@ -641,36 +677,44 @@
             houseAssignment = row[3].toString().trim();
           }
           if (!name || !gender || !studentClass) continue;
-          const studentId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-          let student = { id: studentId, name, gender, classLevel: studentClass, house: null };
+          let student = {
+            name,
+            gender,
+            classLevel: studentClass,
+            house: null,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          };
           if (houseAssignment.toLowerCase() === "auto") {
             let bestHouse = 0;
             let minCount = Infinity;
-            houses.forEach((house, index) => {
-              if (house.length < minCount) { minCount = house.length; bestHouse = index; }
-            });
+            for (let i = 0; i < numberOfHouses; i++) {
+              let count = houses[i] ? houses[i].length : 0;
+              if (count < minCount) {
+                minCount = count;
+                bestHouse = i;
+              }
+            }
             student.house = bestHouse;
-            houses[bestHouse].push(student);
           } else {
             let houseIndex = parseInt(houseAssignment, 10) - 1;
             if (isNaN(houseIndex) || houseIndex < 0 || houseIndex >= numberOfHouses) {
               let bestHouse = 0;
               let minCount = Infinity;
-              houses.forEach((house, index) => {
-                if (house.length < minCount) { minCount = house.length; bestHouse = index; }
-              });
+              for (let i = 0; i < numberOfHouses; i++) {
+                let count = houses[i] ? houses[i].length : 0;
+                if (count < minCount) {
+                  minCount = count;
+                  bestHouse = i;
+                }
+              }
               student.house = bestHouse;
-              houses[bestHouse].push(student);
             } else {
               student.house = houseIndex;
-              houses[houseIndex].push(student);
             }
           }
-          students.push(student);
+          db.collection("students").add(student)
+            .catch(error => { console.error("Error adding student from Excel:", error); });
         }
-        updateHouseDetails();
-        updateHouseChart();
-        updateClassGenderChart();
         alert("Excel data imported successfully.");
       }
       reader.readAsArrayBuffer(file);
@@ -678,10 +722,6 @@
     
     document.getElementById("uploadExcelButton").addEventListener("click", uploadExcel);
     
-    /**********************************
-     * Load Saved Data on Page Load
-     **********************************/
-    window.onload = function() {
-      loadSavedData();
-    };
   </script>
+</body>
+</html>
