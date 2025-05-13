@@ -1,9 +1,698 @@
-<!DOCTYPE HTML>
-<HTML>
-<HEAD>
-<TITLE>PAVAN</TITLE>
-</HEAD>
-<BODY>
-PAVAN IS VERY GOOD
-</BODY>
-</HTML>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student House Management System</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
+  <style>
+    /* ===== Reset & Global Styles ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      color: #333;
+    }
+    /* ===== Simple Login Section ===== */
+    #loginContainer {
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 5px;
+    }
+    #loginContainer h2 { text-align: center; margin-bottom: 1rem; }
+    #loginContainer input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 1rem;
+    }
+    #loginContainer button {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      background: #333;
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .error-msg { text-align: center; color: red; margin-top: 0.5rem; }
+    /* ===== Main System Container ===== */
+    #systemContainer { display: none; margin-top: 20px; }
+    h1, h2, h3, h4 { text-align: center; }
+    /* ===== Student Entry Form ===== */
+    #entryForm {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 5px;
+      text-align: center;
+    }
+    #entryForm label { margin-right: 0.5em; }
+    #entryForm input, #entryForm select, #entryForm button {
+      margin: 0.5em;
+      padding: 0.5em;
+      font-size: 1rem;
+    }
+    /* ===== Save Data & Download PDF Buttons ===== */
+    #saveDataContainer { text-align: center; margin: 20px auto; }
+    #saveDataContainer button {
+      padding: 0.6em 1em;
+      margin: 5px;
+      border: none;
+      background: #333;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 1rem;
+    }
+    /* ===== Excel Upload Section ===== */
+    #excelUploadSection {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 5px;
+      text-align: center;
+    }
+    #excelUploadSection button {
+      padding: 0.5em 1em;
+      margin: 5px;
+      border: none;
+      background: #333;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 1rem;
+    }
+    /* ===== House Details Section ===== */
+    #houseDetails {
+      max-width: 800px;
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 5px;
+    }
+    .house-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .house-table th, .house-table td {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      text-align: center;
+    }
+    .house-table th { background: #eee; }
+    /* Wrap each house detail in a div for individual printing */
+    .house-detail-wrapper { margin-bottom: 15px; }
+    /* New Print All Houses Container */
+    #printAllContainer { text-align: center; margin: 20px auto; }
+    #printAllContainer button {
+      padding: 0.6em 1em; font-size: 1rem;
+      border: none; background: #333; color: #fff; border-radius: 3px; cursor: pointer;
+    }
+    /* ===== Chart Container Styles ===== */
+    .chart-container {
+      max-width: 700px;
+      margin: 30px auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    canvas { background: #fff; border: 1px solid #ccc; display: block; margin: 0 auto; }
+    /* ===== Legend for Class Chart ===== */
+    #legend {
+      text-align: center;
+      margin-top: 10px;
+    }
+    #legend span {
+      display: inline-block;
+      padding: 5px 10px;
+      margin: 5px;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 3px;
+    }
+    #legend .male { background: #FFD700; }
+    #legend .female { background: #FF69B4; }
+    #legend .total { background: #FF8C00; }
+    /* ===== New House Filter for Class Chart ===== */
+    #houseFilterContainer {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #houseFilterContainer label { margin-right: 0.5em; }
+    #houseFilterContainer select {
+      padding: 0.4em;
+      font-size: 1rem;
+    }
+  </style>
+
+
+  
+  <div id="loginContainer">
+    <h2>SCHOOL HOUSES MANAGEMENT SYSTEM</h2>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required="">
+      <input type="password" id="password" placeholder="Password" required="">
+      <button type="submit">Sign In</button>
+    </form>
+    <p class="error-msg" id="loginError"></p>
+  </div>
+  
+  
+  <div id="systemContainer">
+    <h1>Student House Management System</h1>
+    
+    
+    <div id="saveDataContainer">
+      <button id="saveDataButton">Save Data</button>
+      <button id="downloadPDFButton">Download PDF</button>
+    </div>
+    
+    
+    <div id="entryForm">
+      <h3>Enter Student Data</h3>
+      <form id="studentForm">
+        <label for="studentName">Name:</label>
+        <input type="text" id="studentName" placeholder="Enter student name" required="">
+        <label for="studentGender">Gender:</label>
+        <select id="studentGender" required="">
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+        <label for="studentClass">Class:</label>
+        <select id="studentClass" required="">
+          <option value="">Select Class</option>
+          
+          <option value="1A">1A</option>
+          <option value="1B">1B</option>
+          <option value="2A">2A</option>
+          <option value="2B">2B</option>
+          <option value="3A">3A</option>
+          <option value="3B">3B</option>
+          <option value="4A">4A</option>
+          <option value="4B">4B</option>
+          <option value="5A">5A</option>
+          <option value="5B">5B</option>
+          <option value="6A">6A</option>
+          <option value="6B">6B</option>
+          <option value="7A">7A</option>
+          <option value="7B">7B</option>
+          <option value="8A">8A</option>
+          <option value="8B">8B</option>
+          <option value="9A">9A</option>
+          <option value="9B">9B</option>
+          <option value="10A">10A</option>
+          <option value="10B">10B</option>
+        </select>
+        <label for="manualHouse">House Assignment:</label>
+        <select id="manualHouse" required="">
+          <option value="auto">Auto Assign</option>
+          <option value="1">House 1</option>
+          <option value="2">House 2</option>
+          <option value="3">House 3</option>
+          <option value="4">House 4</option>
+        </select>
+        <br>
+        <button type="submit">Add Student</button>
+      </form>
+    </div>
+    
+    
+    <div id="excelUploadSection">
+      <h3>Enter Student Data from Excel</h3>
+      <button id="downloadExcelTemplateButton">Download Excel Template</button>
+      <br><br>
+      <input type="file" id="excelUpload" accept=".xlsx, .xls">
+      <button id="uploadExcelButton">Upload Excel</button>
+    </div>
+    
+    
+    <div id="houseDetails">
+      <h2>House Details</h2>
+      
+    </div>
+    
+    
+    <div id="printAllContainer">
+      <button id="printAllButton">Print All House Details</button>
+    </div>
+    
+    
+    <div class="chart-container" id="houseChartContainer">
+      <h2>House Strength Bar Graph</h2>
+      <canvas id="houseChart" width="600" height="300"></canvas>
+    </div>
+    
+    
+    <div class="chart-container" id="classGenderChartContainer">
+      <h2>Class Wise Gender Distribution &amp; Total Students</h2>
+      <div id="houseFilterContainer">
+        <label for="houseFilter">Select House:</label>
+        <select id="houseFilter">
+          <option value="all">All Houses</option>
+          <option value="0">House 1</option>
+          <option value="1">House 2</option>
+          <option value="2">House 3</option>
+          <option value="3">House 4</option>
+        </select>
+      </div>
+      <canvas id="classGenderChart" width="600" height="300"></canvas>
+      <div id="legend">
+        <span class="male">Male</span>
+        <span class="female">Female</span>
+        <span class="total">Total</span>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    /**********************
+     * Global Data Structures
+     **********************/
+    let students = []; // Global student records
+    const numberOfHouses = 4;
+    let houses = Array.from({ length: numberOfHouses }, () => []);
+    
+    /**********************
+     * Save & Load Data Functions
+     **********************/
+    document.getElementById("saveDataButton").addEventListener("click", function() {
+      localStorage.setItem("students", JSON.stringify(students));
+      localStorage.setItem("houses", JSON.stringify(houses));
+      alert("Data saved successfully!");
+    });
+    
+    function loadSavedData() {
+      const savedStudents = localStorage.getItem("students");
+      const savedHouses = localStorage.getItem("houses");
+      if (savedStudents) { students = JSON.parse(savedStudents); }
+      if (savedHouses) { houses = JSON.parse(savedHouses); }
+      updateHouseDetails();
+      updateHouseChart();
+      updateClassGenderChart();
+    }
+    
+    /**********************
+     * Simple Login Functionality
+     **********************/
+    const validUsername = "Pavaora1";
+    const validPassword = "Pavora@2026";
+    
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const usernameVal = document.getElementById("username").value.trim();
+      const passwordVal = document.getElementById("password").value.trim();
+      if (usernameVal === validUsername && passwordVal === validPassword) {
+        document.getElementById("loginContainer").style.display = "none";
+        document.getElementById("systemContainer").style.display = "block";
+        loadSavedData();
+      } else {
+        document.getElementById("loginError").textContent = "Invalid username or password.";
+      }
+    });
+    
+    /****************************
+     * Student Entry & Assignment
+     ****************************/
+    document.getElementById("studentForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const name = document.getElementById("studentName").value.trim();
+      const gender = document.getElementById("studentGender").value;
+      const studentClass = document.getElementById("studentClass").value;
+      const manualHouseSelection = document.getElementById("manualHouse").value;
+      
+      if (!name || !gender || !studentClass) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+      
+      const studentId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+      let student = { id: studentId, name, gender, classLevel: studentClass, house: null };
+      
+      if (manualHouseSelection === "auto") {
+        let bestHouse = 0;
+        let minCount = Infinity;
+        houses.forEach((house, index) => {
+          if (house.length < minCount) { minCount = house.length; bestHouse = index; }
+        });
+        student.house = bestHouse;
+        houses[bestHouse].push(student);
+      } else {
+        let houseIndex = parseInt(manualHouseSelection, 10) - 1;
+        student.house = houseIndex;
+        houses[houseIndex].push(student);
+      }
+      
+      students.push(student);
+      document.getElementById("studentForm").reset();
+      updateHouseDetails();
+      updateHouseChart();
+      updateClassGenderChart();
+    });
+    
+    /******************************
+     * Update House Details Section
+     ******************************/
+    function updateHouseDetails() {
+      const container = document.getElementById("houseDetails");
+      container.innerHTML = "<h2>House Details</h2>";
+      for (let i = 0; i < numberOfHouses; i++) {
+        let html = `<div class="house-detail-wrapper" id="houseDetail_${i}"><h3>House ${i+1}</h3>`;
+        if (houses[i].length === 0) {
+          html += `<p>No students assigned.</p>`;
+        } else {
+          html += `<table class="house-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Class</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>`;
+          houses[i].forEach(student => {
+            html += `<tr>
+                       <td>${student.name}</td>
+                       <td>${student.gender}</td>
+                       <td>${student.classLevel}</td>
+                       <td>
+                         <button onclick="removeStudent('${student.id}', ${i})">Remove</button>
+                         <button onclick="printHouse(${i})">Print</button>
+                         <button onclick="downloadHouse(${i})">Download CSV</button>
+                       </td>
+                     </tr>`;
+          });
+          html += `</tbody></table>`;
+        }
+        html += `</div>`;
+        container.innerHTML += html;
+      }
+    }
+    
+    /******************************
+     * Remove Student Functionality
+     ******************************/
+    function removeStudent(studentId, houseIndex) {
+      houses[houseIndex] = houses[houseIndex].filter(s => s.id !== studentId);
+      students = students.filter(s => s.id !== studentId);
+      updateHouseDetails();
+      updateHouseChart();
+      updateClassGenderChart();
+    }
+    
+    /******************************
+     * Update House Strength Bar Chart
+     ******************************/
+    function updateHouseChart() {
+      const canvas = document.getElementById("houseChart");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const padding = 50;
+      const availableWidth = canvas.width - padding * 2;
+      const groupWidth = availableWidth / numberOfHouses;
+      const graphHeight = canvas.height - padding * 2;
+      const houseColors = ["#2196F3", "#4CAF50", "#F44336", "#FFEB3B"];
+      let maxCount = Math.max(...houses.map(h => h.length), 1);
+      
+      ctx.beginPath();
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, canvas.height - padding);
+      ctx.lineTo(canvas.width - padding, canvas.height - padding);
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      houses.forEach((house, i) => {
+        const count = house.length;
+        const barHeight = (count / maxCount) * graphHeight;
+        const x = padding + i * groupWidth + groupWidth * 0.2;
+        const barWidth = groupWidth * 0.6;
+        const y = canvas.height - padding - barHeight;
+        ctx.fillStyle = houseColors[i];
+        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+        ctx.font = "14px Arial";
+        ctx.fillText(`House ${i+1}: ${count}`, x + barWidth/2, y - 5);
+      });
+    }
+    
+    /****************************************************
+     * Update Class Wise Gender Distribution Chart
+     * (With dropdown filter by House)
+     ****************************************************/
+    function updateClassGenderChart() {
+      const houseFilterVal = document.getElementById("houseFilter").value;
+      let displayStudents = (houseFilterVal === "all")
+                             ? students
+                             : students.filter(s => s.house === parseInt(houseFilterVal, 10));
+      
+      const classOrder = ["1A","1B","2A","2B","3A","3B","4A","4B","5A","5B","6A","6B","7A","7B","8A","8B","9A","9B","10A","10B"];
+      let distribution = {};
+      classOrder.forEach(cls => { distribution[cls] = { Male: 0, Female: 0, Other: 0 }; });
+      
+      displayStudents.forEach(student => {
+        if (distribution.hasOwnProperty(student.classLevel)) {
+          if (student.gender === "Male") distribution[student.classLevel].Male++;
+          else if (student.gender === "Female") distribution[student.classLevel].Female++;
+          else distribution[student.classLevel].Other++;
+        }
+      });
+      
+      let classesDisplayed = classOrder.filter(cls =>
+        (distribution[cls].Male + distribution[cls].Female + distribution[cls].Other) > 0
+      );
+      
+      const container = document.getElementById("classGenderChartContainer");
+      if (classesDisplayed.length === 0) { container.style.display = "none"; return; }
+      else { container.style.display = "block"; }
+      
+      let maxCountVal = 0;
+      classesDisplayed.forEach(cls => {
+        const total = distribution[cls].Male + distribution[cls].Female + distribution[cls].Other;
+        if (total > maxCountVal) maxCountVal = total;
+      });
+      maxCountVal = Math.max(maxCountVal, 1);
+      
+      const canvas = document.getElementById("classGenderChart");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const padding = 50;
+      const availableWidth = canvas.width - padding * 2;
+      const groupWidth = availableWidth / classesDisplayed.length;
+      const barSpacing = 5;
+      const barWidth = (groupWidth - 4 * barSpacing) / 3;
+      const graphHeight = canvas.height - padding * 2;
+      const colors = { Male: "#FFD700", Female: "#FF69B4", Total: "#FF8C00" };
+      
+      ctx.beginPath();
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, canvas.height - padding);
+      ctx.lineTo(canvas.width - padding, canvas.height - padding);
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      classesDisplayed.forEach((cls, index) => {
+        const groupData = distribution[cls];
+        const groupX = padding + index * groupWidth;
+        
+        ["Male", "Female", "Total"].forEach((category, gIndex) => {
+          const count = category === "Total" ? groupData.Male + groupData.Female + groupData.Other : groupData[category];
+          const barHeight = (count / maxCountVal) * graphHeight;
+          const x = groupX + barSpacing + gIndex * (barWidth + barSpacing);
+          const y = canvas.height - padding - barHeight;
+          ctx.fillStyle = colors[category];
+          ctx.fillRect(x, y, barWidth, barHeight);
+          ctx.fillStyle = "#000";
+          ctx.textAlign = "center";
+          ctx.font = "12px Arial";
+          ctx.fillText(count, x + barWidth/2, y - 2);
+        });
+        
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+        ctx.font = "12px Arial";
+        ctx.fillText(cls, groupX + groupWidth/2, canvas.height - padding + 15);
+      });
+    }
+    
+    // Listen for changes in the house filter dropdown.
+    document.getElementById("houseFilter").addEventListener("change", updateClassGenderChart);
+    
+    /**********************************
+     * Print & Download House-wise Info Functions
+     **********************************/
+    function printHouse(houseIndex) {
+      const content = document.getElementById("houseDetail_" + houseIndex).innerHTML;
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write('<html><head><title>House ' + (houseIndex+1) + ' Details</title></head><body>');
+      printWindow.document.write(content);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+    
+    function downloadHouse(houseIndex) {
+      const house = houses[houseIndex];
+      if (house.length === 0) {
+        alert("No student records for House " + (houseIndex+1));
+        return;
+      }
+      let csvContent = "Name,Gender,Class\n";
+      house.forEach(student => {
+        csvContent += `${student.name},${student.gender},${student.classLevel}\n`;
+      });
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = "House_" + (houseIndex+1) + "_Details.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    
+    // A new function to print *all* house details.
+    function printAllHouseDetails() {
+      const content = document.getElementById("houseDetails").innerHTML;
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write('<html><head><title>All House Details</title>');
+      printWindow.document.write('<style>table {width: 100%; border-collapse: collapse;} table, th, td { border: 1px solid #ccc; padding: 0.5em; text-align: center;} th { background: #eee; } body { font-family: Arial, sans-serif; padding: 20px; }</style>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(content);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+    
+    // Listen for click on "Print All House Details" button.
+    document.getElementById("printAllButton").addEventListener("click", printAllHouseDetails);
+    
+    /**********************************
+     * Download PDF Functionality
+     **********************************/
+    document.getElementById("downloadPDFButton").addEventListener("click", function() {
+      html2canvas(document.getElementById("systemContainer")).then(function(canvas) {
+        const imgData = canvas.toDataURL("image/png");
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save("StudentHouseData.pdf");
+      });
+    });
+    
+    /**********************************
+     * Excel Template Download & Upload
+     **********************************/
+    function downloadExcelTemplate() {
+      const ws_data = [
+        ["Name", "Gender", "Class", "HouseAssignment"],
+        ["John Doe", "Male", "1A", "auto"],
+        ["Jane Doe", "Female", "1B", "2"]
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template");
+      XLSX.writeFile(wb, "StudentTemplate.xlsx");
+    }
+    
+    document.getElementById("downloadExcelTemplateButton").addEventListener("click", downloadExcelTemplate);
+    
+    function uploadExcel() {
+      const fileInput = document.getElementById("excelUpload");
+      if (fileInput.files.length === 0) {
+        alert("Please choose an Excel file.");
+        return;
+      }
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length < 3) continue;
+          const name = row[0].toString().trim();
+          const gender = row[1].toString().trim();
+          const studentClass = row[2].toString().trim();
+          let houseAssignment = "auto";
+          if (row.length >= 4 && row[3].toString().trim() !== "") {
+            houseAssignment = row[3].toString().trim();
+          }
+          if (!name || !gender || !studentClass) continue;
+          const studentId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+          let student = { id: studentId, name, gender, classLevel: studentClass, house: null };
+          if (houseAssignment.toLowerCase() === "auto") {
+            let bestHouse = 0;
+            let minCount = Infinity;
+            houses.forEach((house, index) => {
+              if (house.length < minCount) { minCount = house.length; bestHouse = index; }
+            });
+            student.house = bestHouse;
+            houses[bestHouse].push(student);
+          } else {
+            let houseIndex = parseInt(houseAssignment, 10) - 1;
+            if (isNaN(houseIndex) || houseIndex < 0 || houseIndex >= numberOfHouses) {
+              let bestHouse = 0;
+              let minCount = Infinity;
+              houses.forEach((house, index) => {
+                if (house.length < minCount) { minCount = house.length; bestHouse = index; }
+              });
+              student.house = bestHouse;
+              houses[bestHouse].push(student);
+            } else {
+              student.house = houseIndex;
+              houses[houseIndex].push(student);
+            }
+          }
+          students.push(student);
+        }
+        updateHouseDetails();
+        updateHouseChart();
+        updateClassGenderChart();
+        alert("Excel data imported successfully.");
+      }
+      reader.readAsArrayBuffer(file);
+    }
+    
+    document.getElementById("uploadExcelButton").addEventListener("click", uploadExcel);
+    
+    /**********************************
+     * Load Saved Data on Page Load
+     **********************************/
+    window.onload = function() {
+      loadSavedData();
+    };
+  </script>
