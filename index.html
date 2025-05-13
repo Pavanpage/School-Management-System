@@ -10,11 +10,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
   
-  <!-- Firebase SDK (using the compat libraries for easier migration) -->
+  <!-- Firebase SDK (using compat libraries) -->
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-auth-compat.js"></script> <!-- Added for Firebase Auth -->
   
-  <!-- CSS Styles (same as your original code) -->
+  <!-- CSS Styles (unchanged) -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -23,7 +24,6 @@
       padding: 20px;
       color: #333;
     }
-    /* ===== Simple Login Section ===== */
     #loginContainer {
       max-width: 400px;
       margin: 20px auto;
@@ -52,10 +52,8 @@
       cursor: pointer;
     }
     .error-msg { text-align: center; color: red; margin-top: 0.5rem; }
-    /* ===== Main System Container ===== */
     #systemContainer { display: none; margin-top: 20px; }
     h1, h2, h3, h4 { text-align: center; }
-    /* ===== Student Entry Form ===== */
     #entryForm {
       max-width: 600px;
       margin: 20px auto;
@@ -71,7 +69,6 @@
       padding: 0.5em;
       font-size: 1rem;
     }
-    /* ===== Save Data & Download PDF Buttons ===== */
     #saveDataContainer { text-align: center; margin: 20px auto; }
     #saveDataContainer button {
       padding: 0.6em 1em;
@@ -83,7 +80,6 @@
       border-radius: 3px;
       font-size: 1rem;
     }
-    /* ===== Excel Upload Section ===== */
     #excelUploadSection {
       max-width: 600px;
       margin: 20px auto;
@@ -103,7 +99,6 @@
       border-radius: 3px;
       font-size: 1rem;
     }
-    /* ===== House Details Section ===== */
     #houseDetails {
       max-width: 800px;
       margin: 20px auto;
@@ -124,13 +119,11 @@
     }
     .house-table th { background: #eee; }
     .house-detail-wrapper { margin-bottom: 15px; }
-    /* ===== Print All Houses Container ===== */
     #printAllContainer { text-align: center; margin: 20px auto; }
     #printAllContainer button {
       padding: 0.6em 1em; font-size: 1rem;
       border: none; background: #333; color: #fff; border-radius: 3px; cursor: pointer;
     }
-    /* ===== Chart Container Styles ===== */
     .chart-container {
       max-width: 700px;
       margin: 30px auto;
@@ -141,7 +134,6 @@
       text-align: center;
     }
     canvas { background: #fff; border: 1px solid #ccc; display: block; margin: 0 auto; }
-    /* ===== Legend for Class Chart ===== */
     #legend {
       text-align: center;
       margin-top: 10px;
@@ -157,7 +149,6 @@
     #legend .male { background: #FFD700; }
     #legend .female { background: #FF69B4; }
     #legend .total { background: #FF8C00; }
-    /* ===== New House Filter for Class Chart ===== */
     #houseFilterContainer {
       text-align: center;
       margin-bottom: 10px;
@@ -173,8 +164,8 @@
   <div id="loginContainer">
     <h2>SCHOOL HOUSES MANAGEMENT SYSTEM</h2>
     <form id="loginForm">
-      <input type="text" id="username" placeholder="Username" required="">
-      <input type="password" id="password" placeholder="Password" required="">
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
       <button type="submit">Sign In</button>
     </form>
     <p class="error-msg" id="loginError"></p>
@@ -184,8 +175,6 @@
     <h1>Student House Management System</h1>
     
     <div id="saveDataContainer">
-      <!-- The Save Data button is not needed since data is now cloud‑based. -->
-      <!-- <button id="saveDataButton">Save Data</button> -->
       <button id="downloadPDFButton">Download PDF</button>
     </div>
     
@@ -193,16 +182,16 @@
       <h3>Enter Student Data</h3>
       <form id="studentForm">
         <label for="studentName">Name:</label>
-        <input type="text" id="studentName" placeholder="Enter student name" required="">
+        <input type="text" id="studentName" placeholder="Enter student name" required>
         <label for="studentGender">Gender:</label>
-        <select id="studentGender" required="">
+        <select id="studentGender" required>
           <option value="">Select Gender</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
           <option value="Other">Other</option>
         </select>
         <label for="studentClass">Class:</label>
-        <select id="studentClass" required="">
+        <select id="studentClass" required>
           <option value="">Select Class</option>
           <option value="1A">1A</option>
           <option value="1B">1B</option>
@@ -226,7 +215,7 @@
           <option value="10B">10B</option>
         </select>
         <label for="manualHouse">House Assignment:</label>
-        <select id="manualHouse" required="">
+        <select id="manualHouse" required>
           <option value="auto">Auto Assign</option>
           <option value="1">House 1</option>
           <option value="2">House 2</option>
@@ -260,7 +249,7 @@
     </div>
     
     <div class="chart-container" id="classGenderChartContainer">
-      <h2>Class Wise Gender Distribution &amp; Total Students</h2>
+      <h2>Class Wise Gender Distribution & Total Students</h2>
       <div id="houseFilterContainer">
         <label for="houseFilter">Select House:</label>
         <select id="houseFilter">
@@ -282,55 +271,61 @@
   
   <!-- JavaScript -->
   <script>
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+    // Firebase Configuration
+    // WARNING: Do not expose this in production. Move to a backend or use environment variables.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCPutIIS5Y0uPwXDcAAEnIC-Eg292ZOgvo",
+      authDomain: "school-management-services.firebaseapp.com",
+      projectId: "school-management-services",
+      storageBucket: "school-management-services.firebasestorage.app",
+      messagingSenderId: "577786622660",
+      appId: "1:577786622660:web:5d24932daa538804628f91",
+      measurementId: "G-V2S052S1TY"
+    };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCPutIIS5Y0uPwXDcAAEnIC-Eg292ZOgvo",
-  authDomain: "school-management-services.firebaseapp.com",
-  projectId: "school-management-services",
-  storageBucket: "school-management-services.firebasestorage.app",
-  messagingSenderId: "577786622660",
-  appId: "1:577786622660:web:5d24932daa538804628f91",
-  measurementId: "G-V2S052S1TY"
-};
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(); // Define db variable
+    // const analytics = firebase.analytics(); // Uncomment if analytics is needed
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+    /****************************
      * Global Data Structures
-     **********************/
-    let students = []; // Records from Firestore
+     ****************************/
+    let students = [];
     const numberOfHouses = 4;
     let houses = Array.from({ length: numberOfHouses }, () => []);
 
     /****************************
      * Realtime Listener for Firestore Data
      ****************************/
-    db.collection("students").orderBy("timestamp", "asc").onSnapshot(snapshot => {
-      students = [];
-      houses = Array.from({ length: numberOfHouses }, () => []);
-      snapshot.forEach(doc => {
-        let student = doc.data();
-        student.id = doc.id;
-        students.push(student);
-        if (student.house !== null && student.house < numberOfHouses) {
-          houses[student.house].push(student);
-        }
+    try {
+      db.collection("students").orderBy("timestamp", "asc").onSnapshot(snapshot => {
+        students = [];
+        houses = Array.from({ length: numberOfHouses }, () => []);
+        snapshot.forEach(doc => {
+          let student = doc.data();
+          student.id = doc.id;
+          students.push(student);
+          if (student.house !== null && student.house < numberOfHouses) {
+            houses[student.house].push(student);
+          }
+        });
+        updateHouseDetails();
+        updateHouseChart();
+        updateClassGenderChart();
+      }, error => {
+        console.error("Error fetching Firestore data:", error);
+        alert("Failed to load student data. Please try again.");
       });
-      updateHouseDetails();
-      updateHouseChart();
-      updateClassGenderChart();
-    });
+    } catch (error) {
+      console.error("Error setting up Firestore listener:", error);
+      alert("Error initializing data listener.");
+    }
 
     /****************************
-     * Simple Login Functionality
+     * Simple Login Functionality (Placeholder for Firebase Auth)
      ****************************/
+    // TODO: Replace with Firebase Authentication
     const validUsername = "pavanpages";
     const validPassword = "#Namasvi03";
     
@@ -345,9 +340,9 @@ const analytics = getAnalytics(app);
         document.getElementById("loginError").textContent = "Invalid username or password.";
       }
     });
-    
+
     /****************************
-     * Student Entry & Assignment (Firebase Integrated)
+     * Student Entry & Assignment
      ****************************/
     document.getElementById("studentForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -369,30 +364,34 @@ const analytics = getAnalytics(app);
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       };
       
-      if (manualHouseSelection === "auto") {
-        // Use current house totals to determine the best house
-        let bestHouse = 0;
-        let minCount = Infinity;
-        for (let i = 0; i < numberOfHouses; i++) {
-          let count = houses[i] ? houses[i].length : 0;
-          if (count < minCount) {
-            minCount = count;
-            bestHouse = i;
+      try {
+        if (manualHouseSelection === "auto") {
+          let bestHouse = 0;
+          let minCount = Infinity;
+          for (let i = 0; i < numberOfHouses; i++) {
+            let count = houses[i] ? houses[i].length : 0;
+            if (count < minCount) {
+              minCount = count;
+              bestHouse = i;
+            }
           }
+          student.house = bestHouse;
+        } else {
+          student.house = parseInt(manualHouseSelection, 10) - 1;
         }
-        student.house = bestHouse;
-      } else {
-        student.house = parseInt(manualHouseSelection, 10) - 1;
+        
+        db.collection("students").add(student)
+          .then(() => {
+            document.getElementById("studentForm").reset();
+          })
+          .catch(error => {
+            console.error("Error adding student:", error);
+            alert("Failed to add student. Please try again.");
+          });
+      } catch (error) {
+        console.error("Error processing student form:", error);
+        alert("Error adding student.");
       }
-      
-      // Save student record to Firestore
-      db.collection("students").add(student)
-        .then(() => {
-          document.getElementById("studentForm").reset();
-        })
-        .catch(error => {
-          console.error("Error adding student:", error);
-        });
     });
     
     /******************************
@@ -436,16 +435,22 @@ const analytics = getAnalytics(app);
     }
     
     /******************************
-     * Remove Student Functionality (Firebase Delete)
+     * Remove Student Functionality
      ******************************/
     function removeStudent(studentId) {
-      db.collection("students").doc(studentId).delete()
-        .then(() => {
-          console.log("Student removed successfully.");
-        })
-        .catch(error => {
-          console.error("Error removing student:", error);
-        });
+      try {
+        db.collection("students").doc(studentId).delete()
+          .then(() => {
+            console.log("Student removed successfully.");
+          })
+          .catch(error => {
+            console.error("Error removing student:", error);
+            alert("Failed to remove student. Please try again.");
+          });
+      } catch (error) {
+        console.error("Error in removeStudent:", error);
+        alert("Error removing student.");
+      }
     }
     
     /******************************
@@ -566,7 +571,6 @@ const analytics = getAnalytics(app);
       });
     }
     
-    // Update chart when the house filter changes
     document.getElementById("houseFilter").addEventListener("change", updateClassGenderChart);
     
     /**********************************
@@ -605,7 +609,6 @@ const analytics = getAnalytics(app);
       document.body.removeChild(a);
     }
     
-    // Print all house details
     function printAllHouseDetails() {
       const content = document.getElementById("houseDetails").innerHTML;
       const printWindow = window.open('', '', 'width=800,height=600');
@@ -626,20 +629,28 @@ const analytics = getAnalytics(app);
      * Download PDF Functionality
      **********************************/
     document.getElementById("downloadPDFButton").addEventListener("click", function() {
-      html2canvas(document.getElementById("systemContainer")).then(function(canvas) {
-        const imgData = canvas.toDataURL("image/png");
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save("StudentHouseData.pdf");
-      });
+      try {
+        html2canvas(document.getElementById("systemContainer")).then(function(canvas) {
+          const imgData = canvas.toDataURL("image/png");
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'pt', 'a4');
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save("StudentHouseData.pdf");
+        }).catch(error => {
+          console.error("Error generating PDF:", error);
+          alert("Failed to generate PDF. Please try again.");
+        });
+      } catch (error) {
+        console.error("Error in PDF download:", error);
+        alert("Error generating PDF.");
+      }
     });
     
     /**********************************
-     * Excel Template Download & Upload (Firebase Integrated)
+     * Excel Template Download & Upload
      **********************************/
     function downloadExcelTemplate() {
       const ws_data = [
@@ -664,43 +675,35 @@ const analytics = getAnalytics(app);
       const file = fileInput.files[0];
       const reader = new FileReader();
       reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        for (let i = 1; i < jsonData.length; i++) {
-          const row = jsonData[i];
-          if (!row || row.length < 3) continue;
-          const name = row[0].toString().trim();
-          const gender = row[1].toString().trim();
-          const studentClass = row[2].toString().trim();
-          let houseAssignment = "auto";
-          if (row.length >= 4 && row[3].toString().trim() !== "") {
-            houseAssignment = row[3].toString().trim();
-          }
-          if (!name || !gender || !studentClass) continue;
-          let student = {
-            name,
-            gender,
-            classLevel: studentClass,
-            house: null,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          };
-          if (houseAssignment.toLowerCase() === "auto") {
-            let bestHouse = 0;
-            let minCount = Infinity;
-            for (let i = 0; i < numberOfHouses; i++) {
-              let count = houses[i] ? houses[i].length : 0;
-              if (count < minCount) {
-                minCount = count;
-                bestHouse = i;
-              }
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          const batch = db.batch();
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length < 3) continue;
+            const name = row[0]?.toString().trim();
+            const gender = row[1]?.toString().trim();
+            const studentClass = row[2]?.toString().trim();
+            let houseAssignment = "auto";
+            if (row.length >= 4 && row[3]?.toString().trim() !== "") {
+              houseAssignment = row[3].toString().trim();
             }
-            student.house = bestHouse;
-          } else {
-            let houseIndex = parseInt(houseAssignment, 10) - 1;
-            if (isNaN(houseIndex) || houseIndex < 0 || houseIndex >= numberOfHouses) {
+            if (!name || !gender || !studentClass) continue;
+            
+            let student = {
+              name,
+              gender,
+              classLevel: studentClass,
+              house: null,
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            if (houseAssignment.toLowerCase() === "auto") {
               let bestHouse = 0;
               let minCount = Infinity;
               for (let i = 0; i < numberOfHouses; i++) {
@@ -712,19 +715,48 @@ const analytics = getAnalytics(app);
               }
               student.house = bestHouse;
             } else {
-              student.house = houseIndex;
+              let houseIndex = parseInt(houseAssignment, 10) - 1;
+              if (isNaN(houseIndex) || houseIndex < 0 || houseIndex >= numberOfHouses) {
+                let bestHouse = 0;
+                let minCount = Infinity;
+                for (let i = 0; i < numberOfHouses; i++) {
+                  let count = houses[i] ? houses[i].length : 0;
+                  if (count < minCount) {
+                    minCount = count;
+                    bestHouse = i;
+                  }
+                }
+                student.house = bestHouse;
+              } else {
+                student.house = houseIndex;
+              }
             }
+            
+            const docRef = db.collection("students").doc();
+            batch.set(docRef, student);
           }
-          db.collection("students").add(student)
-            .catch(error => { console.error("Error adding student from Excel:", error); });
+          
+          batch.commit()
+            .then(() => {
+              alert("Excel data imported successfully.");
+              fileInput.value = ""; // Clear file input
+            })
+            .catch(error => {
+              console.error("Error importing Excel data:", error);
+              alert("Failed to import Excel data. Please try again.");
+            });
+        } catch (error) {
+          console.error("Error processing Excel file:", error);
+          alert("Error reading Excel file. Please ensure it's valid.");
         }
-        alert("Excel data imported successfully.");
-      }
+      };
+      reader.onerror = function() {
+        alert("Error reading the file. Please try again.");
+      };
       reader.readAsArrayBuffer(file);
     }
     
     document.getElementById("uploadExcelButton").addEventListener("click", uploadExcel);
-    
   </script>
 </body>
-</html>
+          </html>
